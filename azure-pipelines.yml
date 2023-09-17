@@ -1,0 +1,34 @@
+resources:
+  repositories:
+  - repository: pipeline
+    type: git
+    name: easydevops
+    ref: refs/heads/master
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+    - release-*
+    - refs/tags/dev-release*
+  paths:    
+    exclude:
+    - azure-pipelines.yml
+
+pr: none
+
+parameters:
+- name: multichart
+  displayName: 'multchart option'
+  type: boolean
+  default: false
+
+variables:
+- ${{ if eq(parameters.multichart, true) }}:
+  - group: admin
+- ${{ if eq(parameters.multichart, false) }}:
+  - group: AAT-builder
+
+jobs:
+- template: job-template-main.yml@pipeline

@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: files
+  namespace: ${NAMESPACE}
+spec:
+  replicas: ${NUM_REPLICAS}
+  selector:
+    matchLabels:
+      app: files
+  template:
+    metadata:
+      labels:
+        app: files
+      name: files
+    spec:
+      imagePullSecrets:
+      - name: ${REGSECRET}
+      containers:
+      - name: files
+        image: ${BUILD_IMAGE}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+          name: service-port
+        env:
+        - name: ENV_NAME
+          value: "${DOCKER_TARGETS}"
+        - name: MONGO_HOST
+          value: "${MONGO_HOST}"
+        - name: MONGO_PORT
+          value: "${MONGO_PORT}"
+        - name: MONGO_NAME
+          value: "${FILES_MONGO_NAME}"
+        - name: MONGO_PASSWORD
+          value: "${MONGO_PASSWORD}"
+        - name: MONGO_USER
+          value: "${MONGO_USER}"
+        - name: FILE_UPLOAD_DIRECTORY_NAME
+          value: "${FILE_UPLOAD_DIRECTORY_NAME}"
+        - name: FILE_UPLOAD_SAS_URL
+          value: "${FILE_UPLOAD_SAS_URL}"
+        - name: FILE_UPLOAD_SHARE_NAME
+          value: "${FILE_UPLOAD_SHARE_NAME}"
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 3000
+          # will depend on the docker entrypoint
+          initialDelaySeconds: 10
+          # how frequently you want to check
+          periodSeconds: 120
+          # how much latency you want to allow - should be less that periodSeconds
+          timeoutSeconds: 5
+          # After trying N times, pod gets marked as unready
+          failureThreshold: 2
+---

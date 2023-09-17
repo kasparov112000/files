@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: files
+  name: files
+  namespace: ${NAMESPACE}
+spec:
+  ports:
+  - name: files
+    port: 80
+    targetPort: service-port
+    protocol: TCP
+  selector:
+    app: files
+---
