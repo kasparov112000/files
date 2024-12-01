@@ -1,5 +1,5 @@
 import * as mongoose from 'mongoose';
-import { DbServiceBase } from '@mdr/framework';
+import { DbServiceBase } from 'hipolito-framework';
 
 import { connection } from '../../config/connection';
 

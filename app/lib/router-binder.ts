@@ -3,7 +3,7 @@
     Loads all routes from src/routes folder and bind it with web app.
  */
 
-import { logger } from '@easydevops/pwc-us-agc-logger';
+ 
 import * as fs from 'fs';
 import * as path from 'path';
 import * as _ from 'lodash';
@@ -24,6 +24,6 @@ export default function routeBinder(app, express, service) {
       app.use('/', routerBind.default(app, express, service));
     });
   } catch (err) {
-    logger.log('log', `Unable to register  route! ${err}`);
+     console.log('log', `Unable to register  route! ${err}`);
   }
 }

@@ -9,7 +9,7 @@ test("get", () => {
         return object.get(mockreq,mockres).then(data => expect(data).toEqual({message: "get success"}));
     
     } catch(error) {
-        logger.log("error", error);
+         console.log("error", error);
     }
 }
 
@@ -22,7 +22,7 @@ test("getbyID", () => {
         return object.getbyID(mockreq,mockres).then(data => expect(data).toEqual({message: "get by ID success"}));
     
     } catch(error) {
-        logger.log("error", error);
+         console.log("error", error);
     }
 }
 
@@ -35,7 +35,7 @@ test("post", () => {
         return object.post(mockreq,mockres).then(data => expect(data).toEqual({message: "post success"}));
     
     } catch(error) {
-        logger.log("error", error);
+         console.log("error", error);
     }
 }
 
@@ -48,7 +48,7 @@ test("put", () => {
         return object.put(mockreq,mockres).then(data => expect(data).toEqual({message: "put success"}));
     
     } catch(error) {
-        logger.log("error", error);
+         console.log("error", error);
     }
 }
 
@@ -63,6 +63,6 @@ test("deleteId", () => {
         return object.deleteId(mockreq,mockres).then(data => expect(data).toEqual({message: "delete success"}));
     
     } catch(error) {
-        logger.log("error", error);
+         console.log("error", error);
     }
 }

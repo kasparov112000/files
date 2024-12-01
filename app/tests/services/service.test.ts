@@ -14,7 +14,7 @@
 //         return object.get(req,res).then(data => expect(data).toEqual({firstName: 'John', lastName: 'Doe', Id: '1'}));
     
 //     } catch(error) {
-//         logger.log("error", error);
+//          console.log("error", error);
 //     }
 // }
 
@@ -28,7 +28,7 @@
 //         return object.getbyId(req,res).then(data => expect(data).toEqual({firstName: 'John', lastName: 'Doe', Id: '1'}));
 
 //     } catch(error) {
-//         logger.log("error", error);
+//          console.log("error", error);
 //     }
 // }
 
@@ -43,7 +43,7 @@
     
     
 //     } catch(error) {
-//         logger.log("error", error);
+//          console.log("error", error);
 //     }
 // }
 
@@ -57,7 +57,7 @@
 //         return object.put(req,res).then(data => expect(data).toEqual({response: "JohnDoe was updated"}));
     
 //     } catch(error) {
-//         logger.log("error", error);
+//          console.log("error", error);
 //     }
 // }
 
@@ -72,6 +72,6 @@
 //         const object = new ProjectService
 //         return object.delete(req,res).then(data => expect(data).toEqual({response: "JohnDoe was deleted"}));
 //     } catch(error) {
-//         logger.log("error", error);
+//          console.log("error", error);
 //     }
 // }

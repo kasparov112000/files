@@ -1,8 +1,8 @@
 import { FileService } from '../services/file.service';
 import * as fileUpload from 'express-fileupload';
-import { HttpException } from '@mdr/framework';
+import { HttpException } from 'hipolito-framework';
 import { DbFileService } from '../services/db-file.service';
-import { logger } from '@quicksuite/commons-logger';
+
 
 export default function(app, express, serviceProvider: FileService) {
     let router = express.Router();
@@ -10,7 +10,7 @@ export default function(app, express, serviceProvider: FileService) {
     const status = require('http-status');
 
     router.get('/pingfiles', (req, res) => {
-        logger.log('info', 'GET Ping files', {
+         console.log('info', 'GET Ping files', {
           timestamp: Date.now(),
            txnId: req.id
          });
@@ -19,16 +19,16 @@ export default function(app, express, serviceProvider: FileService) {
     
     app.get('/pingfilesdb', (req, res) => {   
     
-      logger.log('info', 'Attempting to ping files database');
+       console.log('info', 'Attempting to ping files database');
       dbService.connect()
       .then(connectionInfo => {
         res.status(status.OK).json(`<div><h1>files service DB is Up and running </h1></div>`);
     
-        logger.log('info', 'Successfully pinged database!  ');
+         console.log('info', 'Successfully pinged database!  ');
       }, err => {
         res.status(status.INTERNAL_SERVER_ERROR).json('<div><h1>files DB service is down </h1></div>');
     
-        logger.log('error', `Unable to ping files database : ${err}`);
+         console.log('error', `Unable to ping files database : ${err}`);
       });
       dbService.close();
     });
