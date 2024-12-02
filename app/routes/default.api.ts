@@ -2,13 +2,17 @@ import { FileService } from '../services/file.service';
 import * as fileUpload from 'express-fileupload';
 import { HttpException } from 'hipolito-framework';
 import { DbFileService } from '../services/db-file.service';
-
+const multer = require('multer');
 
 export default function(app, express, serviceProvider: FileService) {
     let router = express.Router();
     const dbService = new DbFileService();
     const status = require('http-status');
+    const storage = multer.memoryStorage();
+    const upload = multer({ storage: storage });
+    const path = require('path');
 
+    
     router.get('/pingfiles', (req, res) => {
          console.log('info', 'GET Ping files', {
           timestamp: Date.now(),
@@ -67,6 +71,36 @@ export default function(app, express, serviceProvider: FileService) {
             }
             
         }
+    });
+
+    router.post('/files/gdrive/download', async (req, res) => {
+        const { fileName } = req.body; // Ensure the client sends the file name in the request body
+        if (!fileName) {
+          return res.status(400).send('File name is required.');
+        }
+      
+        const destPath = path.join(__dirname, fileName); // Destination path for the downloaded file
+      
+        try {
+          await serviceProvider.downloadToGdrive(fileName, res);
+          // res.status(200).send(`File downloaded successfully to ${destPath}`);
+        } catch (error) {
+          res.status(500).send(`Error: ${error.message}`);
+        }
+      });
+    
+      // Define the upload endpoint
+    app.post('/files/gdrive/upload', upload.single('file'), async (req, res) => {
+      if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+      }
+    
+      try {
+        const fileId = await serviceProvider.uploadFileToDrive(req.file);
+        res.status(200).send(`File uploaded successfully. File ID: ${fileId}`);
+      } catch (error) {
+        res.status(500).send(`Error: ${error.message}`);
+      }
     });
 
     router.post('/files', (req, res) => {

@@ -8,15 +8,195 @@ import { AzureStorageConfig } from '../../config/azure-storage.config';
 import { isNullOrUndefined } from 'util';
 import { FileDownloadResponse } from '@azure/storage-file/typings/src/generated/src/models';
 import {AzureStorageResponse} from '../../app/providers/azure-storage/azure-storage-response.model';
+import { Readable } from 'stream';
+const { google } = require("googleapis");
+const path = require("path");
+const fs = require('fs');
 
 export class FileService extends DbMicroServiceBase {
     private readonly azureStorageProvider: AzureStorageProvider;
+    CREDENTIALS_PATH: any;
+    SCOPES: string[];
 
     // eslint-disable-line
     constructor(readonly dbService: DbFileService, readonly azureStorageConfig: AzureStorageConfig) {
         super(dbService);
         this.azureStorageProvider = new AzureStorageProvider(azureStorageConfig);
+        this.CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
+        this.SCOPES = ['https://www.googleapis.com/auth/drive'];
     }
+
+ 
+
+    async authenticate() {
+      const auth = new google.auth.GoogleAuth({
+        keyFile: this.CREDENTIALS_PATH,
+        scopes: this.SCOPES,
+      });
+      return await auth.getClient();
+    }
+  
+    async listFiles(auth) {
+      const drive = google.drive({ version: 'v3', auth });
+      try {
+        const res = await drive.files.list({
+          pageSize: 10,
+          fields: 'files(id, name)',
+        });
+        const files = res.data.files;
+        if (files.length === 0) {
+          console.log('No files found.');
+          return [];
+        } else {
+          console.log('Files:');
+          files.forEach((file) => {
+            console.log(`${file.name} (${file.id})`);
+          });
+          return files;
+        }
+      } catch (err) {
+        console.error('Error listing files:', err.message);
+        throw err;
+      }
+    }
+
+    async uploadFileToDrive(fileObject) {
+        const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
+        // Scopes for the Google Drive API
+        const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+    
+        // Authenticate with Google
+        async function authenticate() {
+          const auth = new google.auth.GoogleAuth({
+            keyFile: CREDENTIALS_PATH,
+            scopes: SCOPES,
+          });
+          return await auth.getClient();
+        }
+    
+        const auth = await authenticate();
+        const drive = google.drive({ version: 'v3', auth });
+    
+        const fileMetadata = {
+          name: fileObject.originalname,
+        };
+    
+        // Convert Buffer to Readable Stream
+        const bufferStream = new Readable();
+        bufferStream.push(fileObject.buffer);
+        bufferStream.push(null);
+    
+        const media = {
+          mimeType: fileObject.mimetype,
+          body: bufferStream, // Use the readable stream here
+        };
+    
+        try {
+          const response = await drive.files.create({
+            resource: fileMetadata,
+            media: media,
+            fields: 'id',
+          });
+          return response.data.id;
+        } catch (error) {
+          throw new Error(`Error uploading file: ${error.message}`);
+        }
+      }
+  
+    async findFileIdByName(auth, fileName) {
+      const drive = google.drive({ version: 'v3', auth });
+      try {
+        const res = await drive.files.list({
+          q: `name='${fileName}' and trashed=false`,
+          fields: 'files(id, name)',
+          spaces: 'drive',
+        });
+        const files = res.data.files;
+        if (files.length === 0) {
+          throw new Error(`No file found with the name: ${fileName}`);
+        }
+        return files[0].id;
+      } catch (err) {
+        console.error('Error finding file:', err.message);
+        throw err;
+      }
+    }
+  
+    async downloadFileById(auth, fileId, destPath) {
+      const drive = google.drive({ version: 'v3', auth });
+      const dest = fs.createWriteStream(destPath);
+      try {
+        const res = await drive.files.get(
+          { fileId, alt: 'media' },
+          { responseType: 'stream' }
+        );
+        await new Promise((resolve, reject) => {
+          res.data
+            .on('end', () => {
+              console.log('File downloaded successfully.');
+              resolve(true);
+            })
+            .on('error', (err) => {
+              console.error('Error downloading file:', err.message);
+              reject(err);
+            })
+            .pipe(dest);
+        });
+      } catch (err) {
+        console.error('Error downloading file:', err.message);
+        throw err;
+      }
+    }
+  
+    async downloadToGdrive(fileName, res) {
+      try {
+        const auth = await this.authenticate();
+  
+        if (!fileName) {
+          return res.status(400).send('Missing fileName in request body.');
+        }
+  
+        const fileId = await this.findFileIdByName(auth, fileName);
+        await this.streamFileById(auth, fileId, fileName, res);
+      } catch (error) {
+        console.error('Error:', error.message);
+        if (!res.headersSent) {
+          res.status(500).send(`An error occurred: ${error.message}`);
+        }
+      }  
+    }
+
+    async streamFileById(auth, fileId, fileName, res) {
+        const drive = google.drive({ version: 'v3', auth });
+        try {
+          const response = await drive.files.get(
+            { fileId: fileId, alt: 'media' },
+            { responseType: 'stream' }
+          );
+      
+          // Set appropriate headers
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.setHeader('Content-Type', 'application/octet-stream');
+      
+          // Pipe the stream
+          response.data
+            .on('end', () => {
+              console.log('File streamed successfully.');
+            })
+            .on('error', (err) => {
+              console.error('Error streaming file:', err.message);
+              if (!res.headersSent) {
+                res.status(500).send('Error streaming file.');
+              }
+            })
+            .pipe(res);
+        } catch (err) {
+          console.error('Error streaming file:', err.message);
+          if (!res.headersSent) {
+            res.status(500).send(`Error: ${err.message}`);
+          }
+        }
+      }
 
     public addNewFile(req, res): Promise<ApiResponse<FileMetaData>> {
         let fileMetadata = req.body;
