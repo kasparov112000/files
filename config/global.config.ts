@@ -22,8 +22,8 @@ const controllerSslEnabled = process.env.APPDYNAMICS_CONTROLLER_SSL_ENABLED || t
 const accountName = process.env.APPDYNAMICS_ACCOUNT_NAME || '<accountname>';
 const accountAccessKey = process.env.APPDYNAMICS_ACCOUNT_ACCESS_KEY || '<accesskey>';
 const applicationName = process.env.APPDYNAMICS_APPLICATION_NAME || '<appname>';
-const tierName = '<servicename>' || process.env.APPDYNAMICS_TIER_NAME;
-const nodeName = '<servicename>' || process.env.APPDYNAMICS_NODE_NAME;
+// const tierName = '<servicename>' || process.env.APPDYNAMICS_TIER_NAME;
+// const nodeName = '<servicename>' || process.env.APPDYNAMICS_NODE_NAME;
 const reuseNode = true;
 const reuseNodePrefix = '<servicename>';
 const libagent = true;
@@ -40,8 +40,8 @@ const appDynamicsConfigs = {
         accountName: accountName,
         accountAccessKey: accountAccessKey,
         applicationName: applicationName,
-        tierName: tierName,
-        nodeName: nodeName,
+        // tierName: tierName,
+        // nodeName: nodeName,
         reuseNode: reuseNode,
         reuseNodePrefix: reuseNodePrefix,
         libagent: libagent,

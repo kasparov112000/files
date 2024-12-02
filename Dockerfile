@@ -32,7 +32,7 @@ RUN if [ "${UNIT_TEST}" = "yes" ]; then \
 #
 # RUNTIME
 #
-FROM node:8
+FROM node:18
 EXPOSE 3000
 ENV ENV_NAME=${ENV_NAME}
 

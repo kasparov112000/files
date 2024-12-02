@@ -68,7 +68,6 @@
         "morgan": "^1.9.0",
         "multer": "^1.4.2",
         "swagger-ui-express": "^3.0.10",
-        "typescript": "^3.8.3",
         "typescript-require": "^0.2.10",
         "winston": "^3.3.3",
         "yamljs": "^0.3.0"
@@ -104,6 +103,7 @@
         "sinon-mongoose": "^2.2.1",
         "ts-node-dev": "^1.0.0-pre.44",
         "tsconfig-paths": "^3.9.0",
-        "tslint": "^5.20.1"
+        "tslint": "^5.20.1",
+        "typescript": "^5.7.2"
     }
 }
