@@ -10,7 +10,6 @@ FROM node:16-alpine3.14
 WORKDIR /var/app
 
 ADD package.json .
-ADD .npmrc .
 RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
