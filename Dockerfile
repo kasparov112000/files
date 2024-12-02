@@ -42,7 +42,7 @@ RUN addgroup pwcapp \
 WORKDIR /var/app
 
 COPY --from=1 /var/app/package.json .
-COPY --from=1 /var/app/.npmrc .
+# COPY --from=1 /var/app/.npmrc .
 COPY --from=1 /var/app/build .
 COPY --from=1 /var/app/docs ./docs/
 
