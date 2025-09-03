@@ -22,8 +22,17 @@ export class FileService extends DbMicroServiceBase {
     constructor(readonly dbService: DbFileService, readonly azureStorageConfig: AzureStorageConfig) {
         super(dbService);
         this.azureStorageProvider = new AzureStorageProvider(azureStorageConfig);
-        this.CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
+        // Use environment variable or fall back to a secure location
+        this.CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
+                               process.env.GOOGLE_CREDENTIALS_PATH || 
+                               path.join(__dirname, '../../config/google-credentials.json');
         this.SCOPES = ['https://www.googleapis.com/auth/drive'];
+        
+        // Warn if credentials file doesn't exist
+        if (!fs.existsSync(this.CREDENTIALS_PATH)) {
+            console.warn('Google credentials file not found at:', this.CREDENTIALS_PATH);
+            console.warn('Please set GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_CREDENTIALS_PATH environment variable');
+        }
     }
 
  
@@ -61,7 +70,8 @@ export class FileService extends DbMicroServiceBase {
     }
 
     async uploadFileToDrive(fileObject) {
-        const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
+        // Use the class-level credentials path
+        const CREDENTIALS_PATH = this.CREDENTIALS_PATH;
         // Scopes for the Google Drive API
         const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
     
