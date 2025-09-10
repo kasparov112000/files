@@ -11,7 +11,7 @@
         "start": "node ./app/server.js",
         "start:build": "npm run build && node ./build/index.js",
         "start:dev": "npm-run-all --parallel lint:watch start:watch",
-        "start:watch": "ts-node-dev --respawn --transpileOnly ./app/server.ts",
+        "start:watch": "ts-node-dev --respawn --transpile-only ./app/server.ts",
         "start:debug-docker": "docker-compose -f 'docker-compose.dev.yml' up -d --build",
         "start:docker-dev": "node --inspect=127.0.0.1:9080 ./index.js",
         "start:tsnode": "ts-node ./app/server.ts",
