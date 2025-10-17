@@ -33,6 +33,7 @@ RUN if [ "${UNIT_TEST}" = "yes" ]; then \
 # RUNTIME
 #
 FROM node:18
+ARG ENV_NAME=LOCAL
 EXPOSE 3000
 ENV ENV_NAME=${ENV_NAME}
 

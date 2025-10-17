@@ -12,7 +12,8 @@
             "jest", "node"
         ],
         "typeRoots": [ "./node_modules/@types" ],
-        "strictNullChecks": false
+        "strictNullChecks": false,
+        "skipLibCheck": true
     },
     "include": [
         "app/**/*.ts"
