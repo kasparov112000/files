@@ -38,9 +38,11 @@ jobs:
       uses: docker/build-push-action@v2
       with:
           push: true
-          tags: kasparov112000/files:latest
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.MYTOKEN }}
+          tags: kasparov112000/files:latest,kasparov112000/files:${{ github.sha }}
+          context: .
+          file: ./Dockerfile
+          build-args: |
+            ENV_NAME=${{ secrets.ENV_NAME || 'LOCAL' }}
  
     - name: Save DigitalOcean kubeconfig with short-lived credentials
       run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 3b23a2dd-3391-4d1a-a478-e2a5564de99c
@@ -52,7 +54,11 @@ jobs:
           echo -e "\r\nappVersion: v${GITHUB_REF##*/}\r\n" >> ./helm/Chart.yaml &&
           cat ./helm/Chart.yaml
     - name: Deploy
-      uses: WyriHaximus/github-action-helm3@v2
-      with:
-          exec: helm upgrade files ./helm/ --install --wait --atomic  --set=app.name=files --values=./helm/values.yaml
-          kubeconfig: '${{ secrets.KUBECONFIG }}'
+      run: |
+        helm upgrade files ./helm/ \
+          --install \
+          --wait \
+          --atomic \
+          --set=app.name=files \
+          --set=image.tag=${{ github.sha }} \
+          --values=./helm/values.yaml
