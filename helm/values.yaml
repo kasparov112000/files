@@ -80,3 +80,16 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Environment variables
+env:
+  ENV_NAME: "DEVELOPMENT"
+  MONGO_HOST: "cluster0.tvmkw.mongodb.net"
+  MONGO_PORT: "27017"
+  MONGO_NAME: "mdr-files"
+  MONGO_PASSWORD: "ramos111"
+  MONGO_USER: "dbAdmin"
+  USE_GOOGLE_DRIVE: "true"
+  USE_GOOGLE_DRIVE_OAUTH: "true"
+  GOOGLE_DRIVE_FOLDER_ID: "1AN9LG0-ksWi816ys7vI36a5-YQgZgOS5"
+  GOOGLE_DRIVE_USER_EMAIL: "212marines@gmail.com"

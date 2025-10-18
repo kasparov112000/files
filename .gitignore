@@ -30,3 +30,9 @@ vault.*
 # eclipse
 .project
 .settings/
+config/google-credentials.json
+config/google-drive-token.json
+helm/templates/google-oauth-secret.yaml
+GOOGLE_DRIVE_HELM_SETUP.md
+GOOGLE_DRIVE_SETUP_COMPLETE.md
+config/google-oauth-client.json

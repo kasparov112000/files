@@ -100,6 +100,7 @@
         "mocha": "^5.2.0",
         "npm-run-all": "^4.0.2",
         "nyc": "^15.0.0",
+        "open": "^10.2.0",
         "sinon": "^6.1.5",
         "sinon-mongoose": "^2.2.1",
         "ts-node-dev": "^1.0.0-pre.44",

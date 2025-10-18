@@ -70,44 +70,108 @@ export class FileService extends DbMicroServiceBase {
     }
 
     async uploadFileToDrive(fileObject) {
-        // Use the class-level credentials path
-        const CREDENTIALS_PATH = this.CREDENTIALS_PATH;
-        // Scopes for the Google Drive API
+        // Check if we should use OAuth or service account
+        const USE_OAUTH = process.env.USE_GOOGLE_DRIVE_OAUTH === 'true';
         const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-    
+
         // Authenticate with Google
         async function authenticate() {
-          const auth = new google.auth.GoogleAuth({
-            keyFile: CREDENTIALS_PATH,
-            scopes: SCOPES,
-          });
-          return await auth.getClient();
+          if (USE_OAUTH) {
+            // Use OAuth credentials - use paths relative to project root
+            const projectRoot = process.cwd();
+            const OAUTH_CLIENT_PATH = path.join(projectRoot, 'config/google-oauth-client.json');
+            const TOKEN_PATH = path.join(projectRoot, 'config/google-drive-token.json');
+
+            if (!fs.existsSync(OAUTH_CLIENT_PATH)) {
+              throw new Error('OAuth client credentials not found. Run: node scripts/authorize-oauth.js');
+            }
+            if (!fs.existsSync(TOKEN_PATH)) {
+              throw new Error('OAuth token not found. Run: node scripts/authorize-oauth.js');
+            }
+
+            const credentials = JSON.parse(fs.readFileSync(OAUTH_CLIENT_PATH, 'utf8'));
+            const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
+
+            const { client_id, client_secret, redirect_uris } = credentials.installed;
+            const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+
+            oAuth2Client.setCredentials(token);
+            console.log('✓ Using OAuth credentials for Google Drive upload');
+
+            return oAuth2Client;
+          } else {
+            // Use service account (original method)
+            const CREDENTIALS_PATH = path.join(__dirname, '../../config/google-credentials.json');
+            const USER_EMAIL = process.env.GOOGLE_DRIVE_USER_EMAIL;
+
+            const auth = new google.auth.GoogleAuth({
+              keyFile: CREDENTIALS_PATH,
+              scopes: SCOPES,
+              clientOptions: USER_EMAIL ? { subject: USER_EMAIL } : {}
+            });
+
+            const client = await auth.getClient();
+
+            if (USER_EMAIL && client.subject !== USER_EMAIL) {
+              console.log(`Setting subject to: ${USER_EMAIL}`);
+              client.subject = USER_EMAIL;
+            }
+
+            return client;
+          }
         }
-    
+
         const auth = await authenticate();
         const drive = google.drive({ version: 'v3', auth });
-    
-        const fileMetadata = {
+
+        const fileMetadata: any = {
           name: fileObject.originalname,
         };
-    
+
+        // Add parent folder if specified in environment variable
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+        if (folderId) {
+          fileMetadata.parents = [folderId];
+          console.log(`Uploading to folder: ${folderId}`);
+        }
+
         // Convert Buffer to Readable Stream
         const bufferStream = new Readable();
         bufferStream.push(fileObject.buffer);
         bufferStream.push(null);
-    
+
         const media = {
           mimeType: fileObject.mimetype,
           body: bufferStream, // Use the readable stream here
         };
-    
+
         try {
           const response = await drive.files.create({
             resource: fileMetadata,
             media: media,
-            fields: 'id',
+            fields: 'id, name, mimeType, webViewLink',
           });
-          return response.data.id;
+
+          const fileId = response.data.id;
+          console.log(`File uploaded successfully! ID: ${fileId}`);
+
+          // Make the file publicly accessible
+          try {
+            await drive.permissions.create({
+              fileId: fileId,
+              requestBody: {
+                role: 'reader',
+                type: 'anyone',
+              },
+            });
+            console.log(`File permissions set to public for ID: ${fileId}`);
+          } catch (permError) {
+            console.warn(`Warning: Could not set public permissions for file ${fileId}:`, permError.message);
+            console.warn('File will only be accessible to authenticated users');
+          }
+
+          console.log(`View at: ${response.data.webViewLink || 'N/A'}`);
+          return fileId;
         } catch (error) {
           throw new Error(`Error uploading file: ${error.message}`);
         }
@@ -252,8 +316,78 @@ export class FileService extends DbMicroServiceBase {
     }
 
     public async upload(req, res): Promise<any> {
-        const azureStorageResponse = await this.azureStorageProvider.upload(req.files);
-        this.handleResponse(azureStorageResponse, res);
+        // Check if Google Drive should be used (based on environment variable)
+        const useGoogleDrive = process.env.USE_GOOGLE_DRIVE === 'true';
+
+        if (useGoogleDrive) {
+            return this.uploadToGoogleDrive(req, res);
+        } else {
+            const azureStorageResponse = await this.azureStorageProvider.upload(req.files);
+            this.handleResponse(azureStorageResponse, res);
+        }
+    }
+
+    public async uploadToGoogleDrive(req, res): Promise<any> {
+        try {
+            // Get the file from the request
+            const files = req.files;
+            if (!files || Object.keys(files).length === 0) {
+                return res.status(400).json({
+                    statusCode: 400,
+                    message: 'No files were uploaded'
+                });
+            }
+
+            // Get the first file (supports single file upload for now)
+            const fileKey = Object.keys(files)[0];
+            const file = Array.isArray(files[fileKey]) ? files[fileKey][0] : files[fileKey];
+
+            // Convert express-fileupload format to multer-like format for uploadFileToDrive
+            const fileObject = {
+                originalname: file.name,
+                mimetype: file.mimetype,
+                buffer: file.data,
+                size: file.size
+            };
+
+            // Upload to Google Drive
+            const fileId = await this.uploadFileToDrive(fileObject);
+
+            // Save metadata to database
+            const fileMetadata: FileMetaData = {
+                fileName: file.name,
+                fileExtension: path.extname(file.name),
+                fileType: this.getFileType(path.extname(file.name)),
+                fileCategory: 'attachment' as any, // Required field - 'document' or 'attachment'
+                size: file.size, // Required field
+                externalId: fileId, // Store Google Drive file ID
+                createdDate: new Date(),
+                modifiedDate: new Date()
+            } as any;
+
+            const savedMetadata = await this.dbService.create(fileMetadata);
+
+            return this.handleResponse({
+                statusCode: 200,
+                message: 'File uploaded successfully to Google Drive',
+                result: {
+                    fileId: fileId,
+                    fileName: file.name,
+                    size: file.size,
+                    metadata: savedMetadata
+                }
+            }, res);
+
+        } catch (error) {
+            console.error('Error uploading to Google Drive:', error);
+            return this.handleResponse({
+                statusCode: 500,
+                message: 'Failed to upload file to Google Drive',
+                result: {
+                    error: error.message
+                }
+            }, res);
+        }
     }
 
     public async download(fileId:string, res): Promise<any> {
