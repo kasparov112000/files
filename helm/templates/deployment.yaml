@@ -50,14 +50,18 @@ spec:
             httpGet:
               path: /healthcheck
               port: 3000
-            initialDelaySeconds: 5
-            periodSeconds: 3
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+            successThreshold: 1
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: google-oauth-credentials
           secret:
             secretName: {{ include "helm.fullname" . }}-google-oauth
+            optional: true
             items:
               - key: google-oauth-client.json
                 path: google-oauth-client.json

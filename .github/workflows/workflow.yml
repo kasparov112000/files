@@ -59,6 +59,7 @@ jobs:
           --install \
           --wait \
           --atomic \
+          --timeout=10m \
           --set=app.name=files \
           --set=image.tag=${{ github.sha }} \
           --values=./helm/values.yaml
